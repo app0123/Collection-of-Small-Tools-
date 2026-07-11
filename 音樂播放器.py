@@ -5,14 +5,11 @@ import time
 import random
 import tempfile
 
-# 啟用 Windows CMD 的 ANSI 控制碼支援 (用於無閃爍的游標定位)
 if os.name == 'nt':
     os.system('')
 
-# 徹底隱藏 Pygame 的歡迎訊息
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-# ==================== 1. 自動依賴套件檢測與安裝 ====================
 REQUIRED_PACKAGES = ["pygame", "mutagen"]
 FFMPEG_PACKAGE = "imageio-ffmpeg"
 
@@ -46,7 +43,6 @@ except ImportError:
     print("本程式的快捷鍵功能目前專為 Windows CMD 設計。")
     sys.exit(1)
 
-# ==================== 1.5 FFmpeg 擴充檢測 ====================
 HAS_FFMPEG = False
 FFMPEG_EXE_PATH = None
 
@@ -79,7 +75,6 @@ def setup_ffmpeg():
 
 setup_ffmpeg()
 
-# ==================== 2. 功能邏輯與核心設定 ====================
 NATIVE_EXTENSIONS = ('.mp3', '.wav', '.ogg', '.flac', '.opus')
 EXTENDED_EXTENSIONS = ('.webm', '.m4a', '.aac', '.ape', '.wv', '.alac', '.mp4')
 
@@ -89,7 +84,6 @@ def clear_screen():
 def get_audio_length(path):
     """獲取音訊長度 (加入雙重保險機制)"""
     try:
-        # 第一層：嘗試用 mutagen 讀取標籤
         length = MutagenFile(path).info.length
         if length > 0:
             return length
@@ -97,7 +91,6 @@ def get_audio_length(path):
         pass
         
     try:
-        # 第二層：如果是轉檔出來的純 wav，直接請 pygame 暴力解析長度
         return pygame.mixer.Sound(path).get_length()
     except:
         return 0
@@ -124,7 +117,6 @@ def draw_player_ui(song_name, current_sec, total_sec, status, mode, show_help=Fa
     ui += "        CMD Terminal Pure-Audio Player v2.4\n"
     ui += f"  [ 狀態 ] {status:<15} | [ 模式 ] {mode}\n"
     ui += f"{'=' * 65}\n"
-    # 稍微加寬顯示長度，讓長歌名可以多顯示一點
     ui += f" ▶ 目前播放: {song_name[:55]:<55}\n\n"
     
     bar_length = 30
@@ -173,11 +165,9 @@ def parse_audio_path(user_input):
 
     return valid_files
 
-# ==================== 3. 升級版播放迴圈 ====================
 def play_audio_loop(playlist, initial_mode):
     pygame.mixer.init()
 
-    # 💡 洗牌邏輯：隨機播放時，直接打亂真實清單
     if initial_mode == '隨機播放':
         random.shuffle(playlist) 
 
@@ -199,7 +189,6 @@ def play_audio_loop(playlist, initial_mode):
             load_path = convert_to_temp_wav(song_path)
             status_prefix = "播放中 (FFmpeg)"
             
-        # 💡 重點修正：在確定最終播放檔案(load_path)後，才讀取長度！
         total_length = get_audio_length(load_path)
         
         pygame.mixer.music.load(load_path)
@@ -275,7 +264,6 @@ def play_audio_loop(playlist, initial_mode):
         try: pygame.mixer.music.unload()
         except: pass
             
-        # 💡 換歌邏輯更新
         if force_next:
             current_song_idx += 1
         elif force_prev:
@@ -285,12 +273,10 @@ def play_audio_loop(playlist, initial_mode):
         elif modes[current_mode_idx] == '單次播放':
             break 
         else:
-            # 包括隨機播放、歌單循環，現在通通順著往下走就好
             current_song_idx += 1
             
         if current_song_idx >= len(playlist):
             if modes[current_mode_idx] in ['歌單循環', '隨機播放']:
-                # 若跑到最後一首又要循環，重新洗牌/歸零
                 if modes[current_mode_idx] == '隨機播放':
                     random.shuffle(playlist)
                 current_song_idx = 0
@@ -299,7 +285,6 @@ def play_audio_loop(playlist, initial_mode):
         elif current_song_idx < 0:
             current_song_idx = len(playlist) - 1 if modes[current_mode_idx] in ['歌單循環', '隨機播放'] else 0
 
-# ==================== 4. 主程式選單 ====================
 def main_player_loop():
     while True:
         clear_screen()
